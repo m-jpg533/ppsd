@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎵 名曲牆</title>
+<style>
+body {
+  background:#000;
+  color:#fff;
+  font-family:"Microsoft JhengHei";
+}
+.wall {
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+.card {
+  background:#111;
+  border-radius:12px;
+  overflow:hidden;
+  cursor:pointer;
+}
+.card img {
+  width:100%;
+}
+.card p {
+  margin:8px;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+<h2>🎵 名曲牆（點歌分享）</h2>
+
+<div class="wall">
+
+<a class="card" href="https://www.youtube.com/embed/Vzr0XZ5r8Dk?si=UfpV1OkzcQ-9MWDc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>">
+  <img src="https://img.youtube.com/vi/Vzr0XZ5r8Dk/hqdefault.jpg">
+  <p>🎶 名曲一</p>
+</a>
+
+<a class="card" href="https://www.youtube.com/embed/jSaRUPIsDIA?si=l_5BwGks9GYLfOfK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>">
+  <img src="https://img.youtube.com/vi/jSaRUPIsDIA/hqdefault.jpg">
+  <p>🎶 名曲二</p>
+</a>
+
+<a class="card" href="https://www.youtube.com/embed/bKe8eohEfTQ?si=UrtJfUYUS4-p92nm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>">
+  <img src="https://img.youtube.com/vi/bKe8eohEfTQ/hqdefault.jpg">
+  <p>🎶 名曲三</p>
+</a>
+
+</div>
+</body>
+</html>
