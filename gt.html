@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎬 櫥窗展示卡</title>
+
+<style>
+body{
+  margin:0;
+  background:#000;
+  font-family:-apple-system,BlinkMacSystemFont,"Microsoft JhengHei",sans-serif;
+  color:#fff;
+}
+
+h1{
+  padding:30px;
+  font-size:28px;
+  font-weight:600;
+}
+
+.gallery{
+  display:flex;
+  gap:24px;
+  padding:0 30px 40px;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+}
+
+.card{
+  flex:0 0 280px;
+  background:#111;
+  border-radius:22px;
+  overflow:hidden;
+  scroll-snap-align:start;
+  transition:.4s;
+  cursor:pointer;
+  position:relative;
+}
+
+.card:hover{
+  transform:scale(1.06);
+  box-shadow:0 30px 60px rgba(0,0,0,.6);
+}
+
+.cover{
+  height:180px;
+  background-size:cover;
+  background-position:center;
+}
+
+.info{
+  padding:16px;
+}
+
+.info h3{
+  margin:0;
+  font-size:18px;
+}
+
+.info p{
+  margin:6px 0 0;
+  font-size:14px;
+  opacity:.7;
+}
+
+.play{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:54px;
+  background:rgba(0,0,0,.35);
+  opacity:0;
+  transition:.3s;
+}
+
+.card:hover .play{
+  opacity:1;
+}
+
+/* 播放層 */
+.viewer{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10;
+}
+
+.viewer.show{display:flex}
+
+.viewer iframe{
+  width:80vw;
+  max-width:900px;
+  aspect-ratio:16/9;
+  border:none;
+  border-radius:16px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>精選影片櫥窗</h1>
+
+<div class="gallery">
+
+  <div class="card" onclick="openVideo('1uPaLzKJmJw')">
+    <div class="cover" style="background-image:url('https://img.youtube.com/vi/1uPaLzKJmJw/hqdefault.jpg')"></div>
+    <div class="play">▶</div>
+    <div class="info">
+      <h3>新奇影片一</h3>
+      <p>驚奇 / 創意</p>
+    </div>
+  </div>
+
+  <div class="card" onclick="openVideo('UAsGgfP8zyo')">
+    <div class="cover" style="background-image:url('https://img.youtube.com/vi/UAsGgfP8zyo/hqdefault.jpg')"></div>
+    <div class="play">▶</div>
+    <div class="info">
+      <h3>名曲展示</h3>
+      <p>經典 / 音樂</p>
+    </div>
+  </div>
+
+  <div class="card" onclick="openVideo('S1LUF4xG5Fg')">
+    <div class="cover" style="background-image:url('https://img.youtube.com/vi/S1LUF4xG5Fg/hqdefault.jpg')"></div>
+    <div class="play">▶</div>
+    <div class="info">
+      <h3>科技短片</h3>
+      <p>未來感 / 新奇</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- 播放視窗 -->
+<div class="viewer" id="viewer" onclick="closeVideo()">
+  <iframe id="player"
+    allow="autoplay; encrypted-media"
+    allowfullscreen>
+  </iframe>
+</div>
+
+<script>
+const viewer=document.getElementById("viewer");
+const player=document.getElementById("player");
+
+function openVideo(id){
+  player.src=`https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
+  viewer.classList.add("show");
+}
+
+function closeVideo(){
+  viewer.classList.remove("show");
+  player.src="";
+}
+</script>
+
+</body>
+</html>
