@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>舞台名曲牆</title>
+
+<style>
+body{
+  margin:0;
+  background:black;
+  color:white;
+  font-family:"Microsoft JhengHei",sans-serif;
+  overflow:hidden;
+}
+
+/* ===== 模式按鈕 ===== */
+#modes{
+  position:fixed;
+  top:10px;
+  width:100%;
+  text-align:center;
+  z-index:99;
+}
+#modes button{
+  margin:0 6px;
+  padding:8px 18px;
+  border-radius:20px;
+  border:none;
+  background:#222;
+  color:white;
+  cursor:pointer;
+}
+
+/* ===== 舞台 ===== */
+.stage{
+  position:relative;
+  height:70vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+/* ===== 影片 ===== */
+.videoWrap{
+  width:260px;
+  height:460px;
+  border-radius:22px;
+  overflow:hidden;
+  z-index:5;
+  box-shadow:0 0 40px rgba(255,255,255,.5);
+}
+iframe{
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+/* ===== 探照燈 ===== */
+.spot{
+  position:absolute;
+  width:600px;
+  height:600px;
+  opacity:0;
+  filter:blur(14px);
+  pointer-events:none;
+  transition:opacity .6s, transform 1.2s;
+}
+
+/* 四角 */
+.tl{top:-300px;left:-300px}
+.tr{top:-300px;right:-300px}
+.bl{bottom:-300px;left:-300px}
+.br{bottom:-300px;right:-300px}
+
+/* ===== 播完遮罩 ===== */
+#overlay{
+  position:absolute;
+  inset:0;
+  background:black;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:22px;
+  opacity:0;
+  transition:.6s;
+  z-index:10;
+}
+#overlay.show{opacity:1}
+
+/* ===== 名曲牆 ===== */
+.wall{
+  height:30vh;
+  display:flex;
+  gap:14px;
+  padding:16px;
+  overflow-x:auto;
+}
+.card{
+  min-width:160px;
+  background:#111;
+  border-radius:14px;
+  padding:10px;
+  cursor:pointer;
+  transition:.3s;
+}
+.card:hover{
+  transform:scale(1.08);
+  background:#222;
+}
+
+/* ===== 模式顏色 ===== */
+.stage.neon .spot{
+  background:radial-gradient(circle,
+    rgba(0,255,255,.8),
+    rgba(255,0,255,.4),
+    transparent 70%);
+}
+.stage.heal .spot{
+  background:radial-gradient(circle,
+    rgba(120,255,180,.7),
+    rgba(80,200,255,.4),
+    transparent 70%);
+}
+.stage.sci .spot{
+  background:radial-gradient(circle,
+    rgba(180,0,255,.7),
+    rgba(0,120,255,.4),
+    transparent 70%);
+}
+</style>
+</head>
+
+<body>
+
+<div id="modes">
+  <button onclick="setMode('neon')">霓虹</button>
+  <button onclick="setMode('heal')">療癒</button>
+  <button onclick="setMode('sci')">科幻</button>
+</div>
+
+<div class="stage neon" id="stage">
+
+  <div class="spot tl"></div>
+  <div class="spot tr"></div>
+  <div class="spot bl"></div>
+  <div class="spot br"></div>
+
+  <div class="videoWrap">
+    <iframe id="yt" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  </div>
+
+  <div id="overlay">🎬 下一首準備中…</div>
+</div>
+
+<div class="wall" id="wall"></div>
+
+<script>
+/* ===== 影片清單 ===== */
+const videos=[
+  {title:"繁華攏是夢", id:"jSaRUPIsDIA"},
+  {title:"流浪天涯", id:"bKe8eohEfTQ"},
+  {title:"難忘的記誌", id:"6J6UyVgzERg"}
+];
+
+const yt=document.getElementById("yt");
+const wall=document.getElementById("wall");
+const overlay=document.getElementById("overlay");
+const spots=document.querySelectorAll(".spot");
+const stage=document.getElementById("stage");
+let index=0;
+
+/* ===== 播放 ===== */
+function play(i){
+  overlay.classList.remove("show");
+  yt.src=`https://www.youtube.com/embed/${videos[i].id}?autoplay=1&mute=0`;
+}
+
+/* ===== 名曲牆 ===== */
+videos.forEach((v,i)=>{
+  const c=document.createElement("div");
+  c.className="card";
+  c.textContent=v.title;
+  c.onclick=()=>{index=i;play(i)};
+  wall.appendChild(c);
+});
+
+/* ===== 探照燈隨機 ===== */
+function randomLight(){
+  spots.forEach(s=>{
+    const on=Math.random()>.5;
+    s.style.opacity=on?.9:0;
+    s.style.transform=`rotate(${Math.random()*60-30}deg) scale(${1+Math.random()*.3})`;
+  });
+}
+setInterval(randomLight,1800);
+
+/* ===== 播完熄燈 → 下一首 ===== */
+setInterval(()=>{
+  let i=0;
+  overlay.classList.add("show");
+  const off=setInterval(()=>{
+    if(i<spots.length){
+      spots[i].style.opacity=0;
+      i++;
+    }else{
+      clearInterval(off);
+      index=(index+1)%videos.length;
+      play(index);
+    }
+  },400);
+},180000);
+
+/* ===== 模式 ===== */
+function setMode(m){
+  stage.className="stage "+m;
+}
+
+/* 啟動 */
+play(0);
+</script>
+
+</body>
+</html>
