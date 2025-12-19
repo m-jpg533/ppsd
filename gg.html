@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>舞台名曲牆播放器</title>
+
+<style>
+body{
+  margin:0;
+  background:#000;
+  color:#fff;
+  font-family:"Microsoft JhengHei",sans-serif;
+  overflow:hidden;
+}
+
+/* ===== 時鐘 ===== */
+.clock{
+  position:fixed;
+  top:14px;
+  left:14px;
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.5);
+  z-index:9999;
+}
+
+/* ===== 時鐘刻度（1~12） ===== */
+.clock .num{
+  position:absolute;
+  width:100%;
+  height:100%;
+  text-align:center;
+  font-size:14px;
+  font-weight:bold;
+}
+
+.clock .num span{
+  display:block;
+  margin-top:6px;
+}
+
+.n1  { transform:rotate(30deg); }
+.n2  { transform:rotate(60deg); }
+.n3  { transform:rotate(90deg); }
+.n4  { transform:rotate(120deg); }
+.n5  { transform:rotate(150deg); }
+.n6  { transform:rotate(180deg); }
+.n7  { transform:rotate(210deg); }
+.n8  { transform:rotate(240deg); }
+.n9  { transform:rotate(270deg); }
+.n10 { transform:rotate(300deg); }
+.n11 { transform:rotate(330deg); }
+.n12 { transform:rotate(0deg); }
+/* 內層反轉：讓字直立 */
+.n1  span { transform:rotate(-30deg); }
+.n2  span { transform:rotate(-60deg); }
+.n3  span { transform:rotate(-90deg); }
+.n4  span { transform:rotate(-120deg); }
+.n5  span { transform:rotate(-150deg); }
+.n6  span { transform:rotate(-180deg); }
+.n7  span { transform:rotate(-210deg); }
+.n8  span { transform:rotate(-240deg); }
+.n9  span { transform:rotate(-270deg); }
+.n10 span { transform:rotate(-300deg); }
+.n11 span { transform:rotate(-330deg); }
+.n12 span { transform:rotate(0deg); }
+
+.hand{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform-origin:center bottom;
+}
+.hour{width:4px;height:30px;background:red}
+.minute{width:3px;height:40px;background:yellow}
+.second{width:2px;height:48px;background:#00ffff}
+
+/* ===== 舞台 ===== */
+.stage-wrap{
+  height:65vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.stage{
+  position:relative;
+  width:300px;
+  height:300px;
+}
+
+/* ===== 探照燈 ===== */
+.light{
+  position:absolute;
+  width:420px;
+  height:420px;
+  border-radius:50%;
+  filter:blur(60px);
+  opacity:.55;
+  pointer-events:none;
+  animation:flicker 2.5s infinite alternate;
+}
+.light.r{background:radial-gradient(circle,rgba(255,0,0,.8),transparent)}
+.light.b{background:radial-gradient(circle,rgba(0,180,255,.8),transparent)}
+.light.g{background:radial-gradient(circle,rgba(0,255,150,.8),transparent)}
+.light.p{background:radial-gradient(circle,rgba(200,0,255,.8),transparent)}
+.tl{top:-200px;left:-200px}
+.tr{top:-200px;right:-200px}
+.bl{bottom:-200px;left:-200px}
+.br{bottom:-200px;right:-200px}
+@keyframes flicker{from{opacity:.3}to{opacity:.75}}
+
+/* ===== 音波 ===== */
+.wave{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  border:3px solid rgba(0,255,255,.7);
+  animation:pulse 1.2s infinite ease-in-out;
+  pointer-events:none;
+}
+@keyframes pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.06)}
+  100%{transform:scale(1)}
+}
+
+/* ===== 影片 ===== */
+.video{
+  position:absolute;
+  inset:20px;
+  z-index:10;
+}
+.video iframe{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  border:none;
+  background:#000;
+}
+
+/* ===== 名曲牆 ===== */
+.list{
+  height:35vh;
+  display:flex;
+  gap:16px;
+  padding:16px;
+  overflow-x:auto;
+  background:rgba(0,0,0,.6);
+}
+.card{
+  min-width:160px;
+  cursor:pointer;
+}
+.card img{
+  width:100%;
+  border-radius:12px;
+}
+.card p{
+  font-size:13px;
+  margin:6px 0 0;
+  text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<!-- 時鐘 -->
+
+  
+ <div class="clock">
+  <div class="num n12"><span>12</span></div>
+  <div class="num n1"><span>1</span></div>
+  <div class="num n2"><span>2</span></div>
+  <div class="num n3"><span>3</span></div>
+  <div class="num n4"><span>4</span></div>
+  <div class="num n5"><span>5</span></div>
+  <div class="num n6"><span>6</span></div>
+  <div class="num n7"><span>7</span></div>
+  <div class="num n8"><span>8</span></div>
+  <div class="num n9"><span>9</span></div>
+  <div class="num n10"><span>10</span></div>
+  <div class="num n11"><span>11</span></div>
+
+  <div class="hand hour" id="h"></div>
+  <div class="hand minute" id="m"></div>
+  <div class="hand second" id="s"></div>
+</div>
+
+
+<!-- 舞台 -->
+<div class="stage-wrap">
+  <div class="stage">
+    <div class="light r tl"></div>
+    <div class="light b tr"></div>
+    <div class="light g bl"></div>
+    <div class="light p br"></div>
+
+    <div class="wave"></div>
+
+    <div class="video">
+      <iframe id="yt" allow="encrypted-media" allowfullscreen></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- 名曲牆 -->
+<div class="list" id="list"></div>
+
+<script>
+/* ===== 時鐘 ===== */
+setInterval(()=>{
+  const d=new Date();
+  h.style.transform=`translate(-50%,-100%) rotate(${(d.getHours()%12)*30+d.getMinutes()/2}deg)`;
+  m.style.transform=`translate(-50%,-100%) rotate(${d.getMinutes()*6}deg)`;
+  s.style.transform=`translate(-50%,-100%) rotate(${d.getSeconds()*6}deg)`;
+},1000);
+
+/* ===== 播放清單 ===== */
+const songs=[
+  {title:"繁華攏是夢", id:"jSaRUPIsDIA"},
+  {title:"流浪天涯", id:"bKe8eohEfTQ"},
+  {title:"難忘的記誌", id:"6J6UyVgzERg"}
+];
+
+let idx=0;
+const yt=document.getElementById("yt");
+const list=document.getElementById("list");
+
+/* 建立名曲牆 */
+songs.forEach((s,i)=>{
+  const c=document.createElement("div");
+  c.className="card";
+  c.innerHTML=`<img src="https://img.youtube.com/vi/${s.id}/hqdefault.jpg"><p>${s.title}</p>`;
+  c.onclick=()=>play(i);
+  list.appendChild(c);
+});
+
+/* 播放 */
+function play(i){
+  idx=i;
+  yt.src=`https://www.youtube.com/embed/${songs[i].id}?playsinline=1&autoplay=1`;
+  resetTimer();
+}
+
+/* 假播完下一首（3 分鐘） */
+let timer;
+function resetTimer(){
+  clearTimeout(timer);
+  timer=setTimeout(()=>{
+    idx=(idx+1)%songs.length;
+    play(idx);
+  },180000);
+}
+</script>
+
+</body>
+</html>
+
