@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>科幻音樂首頁</title>
+
+<style>
+body{
+  margin:0;
+  background:radial-gradient(circle at top,#111 0%,#000 70%);
+  font-family:"Microsoft JhengHei",sans-serif;
+  color:#fff;
+  overflow-x:hidden;
+}
+
+/* ===== 模式切換 ===== */
+#modes{
+  position:fixed;
+  top:14px;
+  right:14px;
+  display:flex;
+  gap:8px;
+  z-index:9999;
+}
+#modes button{
+  padding:6px 12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.4);
+  background:rgba(0,0,0,.4);
+  color:#fff;
+  cursor:pointer;
+}
+#modes button:hover{background:rgba(255,255,255,.15)}
+
+/* ===== 主題 ===== */
+body.neon{background:radial-gradient(circle at top,#220022,#000)}
+body.neon .glass, body.neon .tile.playing{box-shadow:0 0 40px #ff00ff}
+
+body.heal{background:radial-gradient(circle at top,#0f2,#021)}
+body.heal .glass{box-shadow:0 0 30px rgba(120,255,200,.6)}
+body.heal .tile.playing{box-shadow:0 0 26px rgba(120,255,200,1)}
+
+body.sci{background:radial-gradient(circle at top,#111,#000)}
+body.sci .glass{box-shadow:0 0 40px rgba(0,255,255,.6)}
+
+/* ===== 科幻時鐘 ===== */
+.clock{
+  position:fixed;
+  top:14px;
+  left:14px;
+  width:140px;
+  height:140px;
+  border-radius:50%;
+  background:rgba(0,30,40,.55);
+  backdrop-filter:blur(10px);
+  border:2px solid rgba(0,255,255,.7);
+  box-shadow:0 0 20px rgba(0,255,255,.8);
+}
+.num{position:absolute; inset:0; text-align:center; color:#9ff}
+.num span{display:block; margin-top:6px}
+.n1{transform:rotate(30deg)} .n1 span{transform:rotate(-30deg)}
+.n2{transform:rotate(60deg)} .n2 span{transform:rotate(-60deg)}
+.n3{transform:rotate(90deg)} .n3 span{transform:rotate(-90deg)}
+.n4{transform:rotate(120deg)} .n4 span{transform:rotate(-120deg)}
+.n5{transform:rotate(150deg)} .n5 span{transform:rotate(-150deg)}
+.n6{transform:rotate(180deg)} .n6 span{transform:rotate(-180deg)}
+.n7{transform:rotate(210deg)} .n7 span{transform:rotate(-210deg)}
+.n8{transform:rotate(240deg)} .n8 span{transform:rotate(-240deg)}
+.n9{transform:rotate(270deg)} .n9 span{transform:rotate(-270deg)}
+.n10{transform:rotate(300deg)} .n10 span{transform:rotate(-300deg)}
+.n11{transform:rotate(330deg)} .n11 span{transform:rotate(-330deg)}
+
+.hand{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform-origin:center bottom;
+  filter:drop-shadow(0 0 6px cyan);
+}
+.hour{width:4px;height:34px;background:#ff5}
+.minute{width:3px;height:46px;background:#fff}
+.second{width:2px;height:56px;background:#0ff}
+
+/* ===== 影片 ===== */
+.center{height:60vh;display:flex;justify-content:center;align-items:center}
+.glass{
+  width:320px;height:320px;border-radius:28px;padding:14px;
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(18px);
+}
+.glass iframe{width:100%;height:100%;border:none;border-radius:20px}
+
+/* ===== 名曲牆 ===== */
+.mosaic{
+  position:relative;
+  z-index:1;  
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:14px;
+  padding:20px;
+}
+.tile{
+  position:relative;border-radius:14px;overflow:hidden;
+  cursor:pointer;transition:.3s;
+}
+.tile img{width:100%;height:100%;object-fit:cover}
+.tile.playing{
+  animation:pulse 1.2s infinite;
+  box-shadow:0 0 26px rgba(0,255,255,1);
+}
+@keyframes pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.06)}
+  100%{transform:scale(1)}
+}
+.play{
+  position:absolute;inset:0;
+  display:flex;justify-content:center;align-items:center;
+  font-size:32px;background:rgba(0,0,0,.35);opacity:0
+}
+.tile:hover .play{opacity:1}
+</style>
+</head>
+
+<body class="sci">
+
+<div id="modes">
+  <button onclick="setMode('neon')">霓虹</button>
+  <button onclick="setMode('heal')">療癒</button>
+  <button onclick="setMode('sci')">科幻</button>
+</div>
+
+<div class="clock">
+  <div class="num n12"><span>12</span></div>
+  <div class="num n1"><span>1</span></div>
+  <div class="num n2"><span>2</span></div>
+  <div class="num n3"><span>3</span></div>
+  <div class="num n4"><span>4</span></div>
+  <div class="num n5"><span>5</span></div>
+  <div class="num n6"><span>6</span></div>
+  <div class="num n7"><span>7</span></div>
+  <div class="num n8"><span>8</span></div>
+  <div class="num n9"><span>9</span></div>
+  <div class="num n10"><span>10</span></div>
+  <div class="num n11"><span>11</span></div>
+  <div class="hand hour" id="h"></div>
+  <div class="hand minute" id="m"></div>
+  <div class="hand second" id="s"></div>
+</div>
+
+<div class="center">
+  <div class="glass">
+    <iframe id="yt" allow="autoplay; encrypted-media" playsinline></iframe>
+  </div>
+</div>
+
+<div class="mosaic" id="mosaic"></div>
+
+<script>
+/* 時鐘 */
+setInterval(()=>{
+  const d=new Date();
+  h.style.transform=`translate(-50%,-100%) rotate(${(d.getHours()%12)*30+d.getMinutes()/2}deg)`;
+  m.style.transform=`translate(-50%,-100%) rotate(${d.getMinutes()*6}deg)`;
+  s.style.transform=`translate(-50%,-100%) rotate(${d.getSeconds()*6}deg)`;
+},1000);
+
+/* 模式 */
+function setMode(m){document.body.className=m}
+
+/* 名曲牆 */
+const songs=["jSaRUPIsDIA","bKe8eohEfTQ","6J6UyVgzERg", "YdK_tHe6mIU", "aGdIyloSuPA"];
+const mosaic=document.getElementById("mosaic");
+const yt=document.getElementById("yt");
+let current=null;
+
+songs.forEach(id=>{
+  const t=document.createElement("div");
+  t.className="tile";
+  t.innerHTML=`<img src="https://img.youtube.com/vi/${id}/hqdefault.jpg"><div class="play">▶</div>`;
+  t.onclick=()=>{
+    if(current) current.classList.remove("playing");
+    t.classList.add("playing");
+    current=t;
+    yt.src=`https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1`;
+  };
+  mosaic.appendChild(t);
+});
+mosaic.children[0].click();
+</script>
+
+</body>
+</html>
