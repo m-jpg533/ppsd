@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>舞台播放器（含右上角圖片）</title>
+
+<style>
+/* ===== 全域 ===== */
+body{
+  margin:0;
+  background:#000;
+  color:#fff;
+  font-family:"Microsoft JhengHei",sans-serif;
+  overflow:hidden;
+}
+/* ===== 時鐘 ===== */
+.clock{
+  position:fixed;
+  top:14px;
+  left:14px;
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.5);
+  z-index:9999;
+}
+
+/* ===== 時鐘刻度（1~12） ===== */
+.clock .num{
+  position:absolute;
+  width:100%;
+  height:100%;
+  text-align:center;
+  font-size:14px;
+  font-weight:bold;
+}
+
+.clock .num span{
+  display:block;
+  margin-top:6px;
+}
+
+.n1  { transform:rotate(30deg); }
+.n2  { transform:rotate(60deg); }
+.n3  { transform:rotate(90deg); }
+.n4  { transform:rotate(120deg); }
+.n5  { transform:rotate(150deg); }
+.n6  { transform:rotate(180deg); }
+.n7  { transform:rotate(210deg); }
+.n8  { transform:rotate(240deg); }
+.n9  { transform:rotate(270deg); }
+.n10 { transform:rotate(300deg); }
+.n11 { transform:rotate(330deg); }
+.n12 { transform:rotate(0deg); }
+/* 內層反轉：讓字直立 */
+.n1  span { transform:rotate(-30deg); }
+.n2  span { transform:rotate(-60deg); }
+.n3  span { transform:rotate(-90deg); }
+.n4  span { transform:rotate(-120deg); }
+.n5  span { transform:rotate(-150deg); }
+.n6  span { transform:rotate(-180deg); }
+.n7  span { transform:rotate(-210deg); }
+.n8  span { transform:rotate(-240deg); }
+.n9  span { transform:rotate(-270deg); }
+.n10 span { transform:rotate(-300deg); }
+.n11 span { transform:rotate(-330deg); }
+.n12 span { transform:rotate(0deg); }
+
+.hand{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform-origin:center bottom;
+}
+.hour{width:4px;height:30px;background:red}
+.minute{width:3px;height:40px;background:yellow}
+.second{width:2px;height:48px;background:#00ffff}
+
+/* ===== 右上角圖片 ===== */
+.avatar{
+  position:fixed;
+  top:14px;
+  right:14px;
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  object-fit:cover;
+  z-index:9999;
+  box-shadow:0 0 18px rgba(0,255,255,.6);
+  pointer-events:none; /* 不阻擋影片點擊 */
+}
+
+/* ===== 舞台區 ===== */
+.stage-wrap{
+  height:65vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.stage{
+  position:relative;
+  width:300px;
+  height:300px;
+}
+
+/* ===== 環狀音波 ===== */
+.wave{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  border:3px solid rgba(0,255,255,.7);
+  animation:pulse 1.2s infinite ease-in-out;
+  pointer-events:none;
+}
+
+@keyframes pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.06)}
+  100%{transform:scale(1)}
+}
+
+/* ===== 影片 ===== */
+.video{
+  position:absolute;
+  inset:20px;
+  z-index:10;
+}
+
+.video iframe{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  border:none;
+  background:#000;
+}
+
+/* ===== 名曲牆 ===== */
+.list{
+  height:35vh;
+  display:flex;
+  gap:16px;
+  padding:16px;
+  overflow-x:auto;
+  background:rgba(0,0,0,.6);
+}
+
+.card{
+  min-width:160px;
+  cursor:pointer;
+}
+
+.card img{
+  width:100%;
+  border-radius:12px;
+}
+
+.card p{
+  font-size:13px;
+  margin:6px 0 0;
+  text-align:center;
+}
+</style>
+</head>
+
+<body>
+<!-- 時鐘 -->
+
+  
+ <div class="clock">
+  <div class="num n12"><span>12</span></div>
+  <div class="num n1"><span>1</span></div>
+  <div class="num n2"><span>2</span></div>
+  <div class="num n3"><span>3</span></div>
+  <div class="num n4"><span>4</span></div>
+  <div class="num n5"><span>5</span></div>
+  <div class="num n6"><span>6</span></div>
+  <div class="num n7"><span>7</span></div>
+  <div class="num n8"><span>8</span></div>
+  <div class="num n9"><span>9</span></div>
+  <div class="num n10"><span>10</span></div>
+  <div class="num n11"><span>11</span></div>
+
+  <div class="hand hour" id="h"></div>
+  <div class="hand minute" id="m"></div>
+  <div class="hand second" id="s"></div>
+</div>
+
+
+<!-- ✅ 右上角圖片 -->
+<img
+  class="avatar"
+  src="https://m-jpg533.github.io/ppsd/52.jpg"
+  alt="角色圖片">
+
+<!-- ✅ 舞台 -->
+<div class="stage-wrap">
+  <div class="stage">
+
+    <div class="wave"></div>
+
+    <div class="video">
+      <iframe
+        id="yt"
+        allow="autoplay; encrypted-media"
+        allowfullscreen
+        playsinline
+        webkit-playsinline>
+      </iframe>
+    </div>
+
+  </div>
+</div>
+
+<!-- ✅ 名曲牆 -->
+<div class="list" id="list"></div>
+
+<script>
+/* ===== 播放清單 ===== */
+const songs=[
+  {title:"繁華攏是夢", id:"jSaRUPIsDIA"},
+  {title:"流浪天涯", id:"bKe8eohEfTQ"},
+  {title:"難忘的記誌", id:"6J6UyVgzERg"}
+];
+
+const yt = document.getElementById("yt");
+const list = document.getElementById("list");
+let index = 0;
+
+/* 建立名曲牆 */
+songs.forEach((s,i)=>{
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <img src="https://img.youtube.com/vi/${s.id}/hqdefault.jpg">
+    <p>${s.title}</p>
+  `;
+  card.onclick = ()=>play(i);
+  list.appendChild(card);
+});
+
+/* 播放指定影片 */
+function play(i){
+  index = i;
+  yt.src = `https://www.youtube.com/embed/${songs[i].id}?autoplay=1&playsinline=1&rel=0`;
+}
+
+/* 預設播放第一首 */
+play(0);
+
+/* ===== 時鐘運作 ===== */
+const h = document.getElementById("h");
+const m = document.getElementById("m");
+const s = document.getElementById("s");
+
+function updateClock(){
+  const now = new Date();
+
+  const hour = now.getHours() % 12;
+  const minute = now.getMinutes();
+  const second = now.getSeconds();
+
+  h.style.transform =
+    `translate(-50%, -100%) rotate(${hour * 30 + minute * 0.5}deg)`;
+  m.style.transform =
+    `translate(-50%, -100%) rotate(${minute * 6}deg)`;
+  s.style.transform =
+    `translate(-50%, -100%) rotate(${second * 6}deg)`;
+}
+
+/* 立刻跑一次，避免一開始不顯示 */
+updateClock();
+
+/* 每秒更新 */
+setInterval(updateClock, 1000);
+</script>
+
+
+
+</body>
+</html>
