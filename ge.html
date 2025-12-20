@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Shorts 科幻版</title>
+
+<style>
+body{
+  margin:0;
+  background:#000;
+  font-family:"Microsoft JhengHei",sans-serif;
+  overflow:hidden;
+}
+
+/* ===== Shorts 列表 ===== */
+.shorts{
+  height:100vh;
+  overflow-y:auto;
+  scroll-snap-type:y mandatory;
+}
+
+.short{
+  height:100vh;
+  position:relative;
+  scroll-snap-align:start;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.short img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+/* 播放中發光 */
+.short.playing{
+  box-shadow:inset 0 0 80px rgba(0,255,255,.9);
+}
+
+/* ▶ 播放鍵 */
+.playIcon{
+  position:absolute;
+  font-size:64px;
+  color:#fff;
+  background:rgba(0,0,0,.4);
+  border-radius:50%;
+  padding:20px;
+}
+
+/* ===== 全螢幕播放器 ===== */
+#playerBox{
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:none;
+  z-index:9999;
+}
+
+#player{
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+/* ===== 右側音量動畫（視覺） ===== */
+.volume{
+  position:fixed;
+  right:12px;
+  top:50%;
+  transform:translateY(-50%);
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.volume span{
+  width:6px;
+  height:14px;
+  background:#0ff;
+  animation:vol 1s infinite ease-in-out;
+}
+.volume span:nth-child(2){animation-delay:.2s}
+.volume span:nth-child(3){animation-delay:.4s}
+
+@keyframes vol{
+  0%,100%{opacity:.3}
+  50%{opacity:1}
+}
+</style>
+</head>
+
+<body>
+
+<div class="shorts">
+  <div class="short" data-id="jSaRUPIsDIA">
+    <img src="https://img.youtube.com/vi/jSaRUPIsDIA/hqdefault.jpg">
+    <div class="playIcon">▶</div>
+  </div>
+
+  <div class="short" data-id="bKe8eohEfTQ">
+    <img src="https://img.youtube.com/vi/bKe8eohEfTQ/hqdefault.jpg">
+    <div class="playIcon">▶</div>
+  </div>
+</div>
+
+<!-- 播放器 -->
+<div id="playerBox">
+  <iframe id="player" allow="encrypted-media" playsinline></iframe>
+</div>
+
+<div class="volume">
+  <span></span><span></span><span></span>
+</div>
+
+<script>
+const shorts = document.querySelectorAll(".short");
+const box = document.getElementById("playerBox");
+const player = document.getElementById("player");
+
+shorts.forEach(s=>{
+  s.onclick = ()=>{
+    shorts.forEach(x=>x.classList.remove("playing"));
+    s.classList.add("playing");
+
+    const id = s.dataset.id;
+    player.src = `https://www.youtube.com/embed/${id}?playsinline=1`;
+    box.style.display = "block";
+  };
+});
+
+/* 點擊背景關閉 */
+box.onclick = ()=>{
+  player.src="";
+  box.style.display="none";
+};
+</script>
+
+</body>
+</html>
