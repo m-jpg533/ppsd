@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shorts 科幻音樂首頁</title>
+
+<style>
+/* ===== 基本 ===== */
+body{
+  margin:0;
+  background:#000;
+  font-family:"Microsoft JhengHei",sans-serif;
+  color:#fff;
+  overflow-x:hidden;
+}
+
+/* ===== 模式按鈕 ===== */
+#modes{
+  position:fixed;
+  top:12px;
+  right:12px;
+  display:flex;
+  gap:8px;
+  z-index:10000;
+}
+#modes button{
+  padding:6px 12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.4);
+  background:rgba(0,0,0,.45);
+  color:#fff;
+  font-size:13px;
+  backdrop-filter:blur(6px);
+  cursor:pointer;
+}
+#modes button:hover{
+  background:rgba(255,255,255,.15);
+}
+
+/* ===== 中央能量核心 ===== */
+.ring{
+  position:fixed;
+  left:50%;
+  top:50%;
+  width:180px;
+  height:180px;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  z-index:2;
+}
+
+/* ===== Shorts 牆 ===== */
+.shorts{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:12px;
+  padding:16px;
+  margin-top:70px;
+}
+
+.short{
+  position:relative;
+  border-radius:14px;
+  overflow:hidden;
+  cursor:pointer;
+  transition:.3s;
+  box-shadow:0 0 10px rgba(0,255,255,.25);
+}
+.short img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.short.playing{
+  box-shadow:0 0 30px rgba(0,255,255,1);
+  transform:scale(1.05);
+}
+
+/* 播放 icon */
+.playIcon{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:36px;
+  background:rgba(0,0,0,.35);
+}
+
+/* ===== 播放器 ===== */
+#playerBox{
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:none;
+  z-index:9999;
+}
+#player{
+  width:100%;
+  height:100%;
+  border:none;
+}
+#closeBtn{
+  position:absolute;
+  top:16px;
+  right:16px;
+  z-index:10000;
+  font-size:24px;
+  background:rgba(0,0,0,.6);
+  border:none;
+  color:#fff;
+  padding:6px 12px;
+  border-radius:50%;
+  cursor:pointer;
+}
+
+/* ===== 模式樣式 ===== */
+
+/* 科幻 → 能量核心 */
+body.sci{
+  background:radial-gradient(circle at top,#111,#000);
+}
+body.sci .ring{
+  border:4px solid cyan;
+  box-shadow:0 0 30px cyan,inset 0 0 30px cyan;
+  animation:spin 4s linear infinite;
+}
+
+/* 霓虹 → 夜店光環 */
+body.neon{
+  background:radial-gradient(circle at top,#220022,#000);
+}
+body.neon .ring{
+  border:4px solid magenta;
+  box-shadow:0 0 40px magenta,0 0 80px cyan;
+  animation:spin 2s linear infinite;
+}
+
+/* 療癒 → 呼吸光圈 */
+body.heal{
+  background:radial-gradient(circle at top,#0f2,#021);
+}
+body.heal .ring{
+  border:4px solid #00ff88;
+  animation:breathe 3s ease-in-out infinite;
+}
+
+/* ===== 動畫 ===== */
+@keyframes spin{
+  from{transform:translate(-50%,-50%) rotate(0deg)}
+  to{transform:translate(-50%,-50%) rotate(360deg)}
+}
+@keyframes breathe{
+  0%{box-shadow:0 0 10px #00ff88}
+  50%{box-shadow:0 0 50px #00ff88}
+  100%{box-shadow:0 0 10px #00ff88}
+}
+</style>
+</head>
+
+<body class="sci">
+
+<!-- 模式切換 -->
+<div id="modes">
+  <button onclick="setMode('sci')">科幻</button>
+  <button onclick="setMode('neon')">霓虹</button>
+  <button onclick="setMode('heal')">療癒</button>
+</div>
+
+<!-- 能量核心 -->
+<div class="ring"></div>
+
+<!-- Shorts -->
+<div class="shorts" id="shorts"></div>
+
+<!-- 播放器 -->
+<div id="playerBox">
+  <iframe id="player" allow="encrypted-media" playsinline></iframe>
+  <button id="closeBtn" onclick="closePlayer()">✕</button>
+</div>
+
+<script>
+/* ===== 模式切換 ===== */
+function setMode(mode){
+  document.body.className = mode;
+}
+
+/* ===== Shorts 資料 ===== */
+const videos=[
+  "jSaRUPIsDIA",
+  "bKe8eohEfTQ",
+  "6J6UyVgzERg",
+  "L_jWHffIx5E",
+  "kXYiU_JCYtU"
+];
+
+const shorts=document.getElementById("shorts");
+const playerBox=document.getElementById("playerBox");
+const player=document.getElementById("player");
+let current=null;
+
+/* 建立 Shorts */
+videos.forEach(id=>{
+  const div=document.createElement("div");
+  div.className="short";
+  div.innerHTML=`
+    <img src="https://img.youtube.com/vi/${id}/hqdefault.jpg">
+    <div class="playIcon">▶</div>
+  `;
+  div.onclick=()=>{
+    if(current) current.classList.remove("playing");
+    div.classList.add("playing");
+    current=div;
+
+    // 點擊才播放（有聲）
+    player.src=`https://www.youtube.com/embed/${id}?playsinline=1`;
+    playerBox.style.display="block";
+  };
+  shorts.appendChild(div);
+});
+
+/* 關閉播放器 */
+function closePlayer(){
+  player.src="";
+  playerBox.style.display="none";
+  if(current) current.classList.remove("playing");
+}
+</script>
+
+</body>
+</html>
