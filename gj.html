@@ -1,0 +1,604 @@
+<!-- <!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>科幻 Shorts 音樂首頁</title>
+
+<style>
+:root{
+  --ring:#00ffff;
+  --beat:1;
+}
+
+/* ===== 基本 ===== */
+body{
+  margin:0;
+  background:#000;
+  font-family:"Microsoft JhengHei",sans-serif;
+  color:#fff;
+  overflow-x:hidden;
+}
+
+/* ===== 模式切換 ===== */
+#modes{
+  position:fixed;
+  top:12px;
+  right:12px;
+  display:flex;
+  gap:8px;
+  z-index:10000;
+}
+#modes button{
+  padding:6px 12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.4);
+  background:rgba(0,0,0,.5);
+  color:#fff;
+  cursor:pointer;
+}
+body.neon{--ring:#ff00ff}
+body.heal{--ring:#78ffc8}
+body.sci {--ring:#00ffff}
+
+/* ===== Shorts 卡片 ===== */
+.shorts{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:14px;
+  padding:16px;
+}
+.short{
+  position:relative;
+  border-radius:16px;
+  overflow:hidden;
+  cursor:pointer;
+  transition:.2s;
+}
+.short img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.short.playing{
+  box-shadow:0 0 30px var(--ring);
+  animation:pulse 1s infinite;
+}
+@keyframes pulse{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.08)}
+}
+.playIcon{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:36px;
+  background:rgba(0,0,0,.35);
+}
+
+/* ===== 播放舞台 ===== */
+#playerBox{
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:none;
+  z-index:9999;
+  overflow:hidden;
+}
+#player{
+  width:100%;
+  height:100%;
+  border:none;
+  z-index:5;
+}
+
+/* ===== 光環 ===== */
+.ring{
+  position:absolute;
+  inset:-50px;
+  border-radius:50%;
+  z-index:2;
+  background:
+    radial-gradient(circle,
+      rgba(255,255,255,.9) 0%,
+      var(--ring) 35%,
+      transparent 70%);
+  box-shadow:
+    0 0 40px var(--ring),
+    0 0 100px var(--ring),
+    0 0 200px var(--ring);
+  transform:scale(calc(1 + var(--beat)*0.2));
+  filter:brightness(calc(1 + var(--beat)*0.8));
+  transition:.1s;
+}
+
+/* ===== 掃描探照燈 ===== */
+.spot{
+  position:absolute;
+  width:200%;
+  height:200%;
+  top:-100%;
+  left:-100%;
+  mix-blend-mode:screen;
+  opacity:.7;
+  animation:scan 4s linear infinite;
+}
+.s1{background:conic-gradient(from 0deg, var(--ring), transparent 40%)}
+.s2{background:conic-gradient(from 120deg, var(--ring), transparent 40%);animation-delay:-1s}
+.s3{background:conic-gradient(from 240deg, var(--ring), transparent 40%);animation-delay:-2s}
+
+@keyframes scan{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
+}
+
+/* 關閉鍵 */
+#closeBtn{
+  position:absolute;
+  top:16px;
+  left:16px;
+  z-index:10001;
+  font-size:26px;
+  background:none;
+  border:none;
+  color:#fff;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body class="sci">
+
+<!-- 模式 -->
+<div id="modes">
+  <button onclick="setMode('neon')">霓虹</button>
+  <button onclick="setMode('heal')">療癒</button>
+  <button onclick="setMode('sci')">科幻</button>
+</div>
+
+<!-- Shorts -->
+<div class="shorts">
+  <div class="short" data-id="jSaRUPIsDIA">
+    <img src="https://img.youtube.com/vi/jSaRUPIsDIA/hqdefault.jpg">
+    <div class="playIcon">▶</div>
+  </div>
+  <div class="short" data-id="bKe8eohEfTQ">
+    <img src="https://img.youtube.com/vi/bKe8eohEfTQ/hqdefault.jpg">
+    <div class="playIcon">▶</div>
+  </div>
+</div>
+
+<!-- 播放器 -->
+<div id="playerBox">
+  <button id="closeBtn" onclick="closePlayer()">✕</button>
+  <iframe id="player" allow="autoplay; encrypted-media" playsinline></iframe>
+  <div class="ring"></div>
+  <div class="spot s1"></div>
+  <div class="spot s2"></div>
+  <div class="spot s3"></div>
+</div>
+
+<script>
+let playing=false;
+let current=null;
+
+/* 假節奏 */
+setInterval(()=>{
+  if(!playing) return;
+  const beat=(Math.sin(Date.now()/120)+1)/2;
+  document.documentElement.style.setProperty("--beat",beat);
+  document.querySelectorAll(".spot").forEach(s=>{
+    s.style.animationDuration=(4-beat*2)+"s";
+  });
+},60);
+
+/* 播放 */
+function play(id,card){
+  const box=document.getElementById("playerBox");
+  const player=document.getElementById("player");
+  player.src=`https://www.youtube.com/embed/${id}?playsinline=1`;
+  box.style.display="block";
+  playing=true;
+  if(current) current.classList.remove("playing");
+  current=card;
+  card.classList.add("playing");
+}
+
+/* 關閉 */
+function closePlayer(){
+  document.getElementById("player").src="";
+  document.getElementById("playerBox").style.display="none";
+  playing=false;
+  if(current) current.classList.remove("playing");
+}
+
+/* 模式 */
+function setMode(m){
+  document.body.className=m;
+}
+
+/* 綁定 */
+document.querySelectorAll(".short").forEach(s=>{
+  s.onclick=()=>play(s.dataset.id,s);
+});
+</script>
+
+</body>
+</html>
+ -->
+ 
+ <!-- <!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shorts 雙模式播放</title>
+
+<style>
+body{
+  margin:0;
+  background:#000;
+  font-family:sans-serif;
+  color:#fff;
+  overflow:hidden;
+}
+
+/* 模式按鈕 */
+#modes{
+  position:fixed;
+  top:10px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:100;
+}
+#modes button{
+  margin:0 4px;
+  padding:6px 12px;
+  border-radius:20px;
+  border:none;
+  background:#222;
+  color:#fff;
+}
+
+/* Shorts 卡片 */
+#list{
+  display:flex;
+  gap:16px;
+  padding:80px 20px;
+}
+.card{
+  width:160px;
+  height:280px;
+  background:#111;
+  border-radius:20px;
+  flex-shrink:0;
+  position:relative;
+  cursor:pointer;
+}
+
+/* 播放中發光 */
+.card.playing{
+  box-shadow:0 0 40px #0ff;
+  animation:beat 0.6s infinite alternate;
+}
+@keyframes beat{
+  from{transform:scale(1)}
+  to{transform:scale(1.03)}
+}
+
+/* 播放器 */
+#playerBox{
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:50;
+}
+#player{
+  width:100%;
+  height:100%;
+  border:none;
+  z-index:10;
+}
+
+/* 能量核心 / 光環 */
+.ring{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  filter:blur(20px);
+  opacity:0;
+  pointer-events:none;
+}
+body.neon .ring{
+  background:radial-gradient(circle,#ff00ff,#000);
+  animation:pulse 0.6s infinite alternate;
+  opacity:1;
+}
+body.heal .ring{
+  background:radial-gradient(circle,#00ffcc,#000);
+  animation:breath 3s infinite;
+  opacity:1;
+}
+body.sci .ring{
+  background:conic-gradient(#0ff,#00f,#0ff);
+  animation:spin 1.5s linear infinite;
+  opacity:1;
+}
+
+/* 掃描燈 */
+.spot{
+  position:absolute;
+  inset:-50%;
+  background:conic-gradient(from 0deg,rgba(255,255,255,.6),transparent 60%);
+  animation:scan 2s linear infinite;
+  pointer-events:none;
+}
+
+@keyframes pulse{to{filter:blur(35px)}}
+@keyframes breath{50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes scan{to{transform:rotate(360deg)}}
+</style>
+</head>
+
+<body class="sci">
+
+<div id="modes">
+  <button onclick="setMode('neon')">霓虹</button>
+  <button onclick="setMode('heal')">療癒</button>
+  <button onclick="setMode('sci')">科幻</button>
+</div>
+
+<div id="list">
+  <div class="card" onclick="play('jSaRUPIsDIA',this)"></div>
+  <div class="card" onclick="play('aqz-KE-bpKQ',this)"></div>
+  <div class="card" onclick="play('ScMzIvxBSi4',this)"></div>
+</div>
+
+<div id="playerBox">
+  <iframe
+    id="player"
+    allow="encrypted-media"
+    playsinline
+    webkit-playsinline>
+  </iframe>
+
+  <div class="ring"></div>
+  <div class="spot"></div>
+</div>
+
+<script>
+let current=null;
+let playing=false;
+
+/* iOS 偵測 */
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+
+/* 播放 */
+function play(id,card){
+  const box=document.getElementById("playerBox");
+  const player=document.getElementById("player");
+
+  box.style.display="flex";
+
+  if(isIOS){
+    // iOS：只顯示，不自動播
+    player.src=`https://www.youtube.com/embed/${id}?playsinline=1`;
+  }else{
+    // Android：可自動播
+    player.src=`https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1`;
+  }
+
+  if(current) current.classList.remove("playing");
+  current=card;
+  card.classList.add("playing");
+}
+
+/* 模式切換 */
+function setMode(m){
+  document.body.className=m;
+}
+</script>
+
+</body>
+</html>
+ -->
+ 
+ <!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Shorts 科幻首頁</title>
+
+<style>
+body{
+  margin:0;
+  background:#000;
+  font-family:"Microsoft JhengHei",sans-serif;
+  color:#fff;
+}
+
+/* ===== 模式按鈕 ===== */
+#modes{
+  position:fixed;
+  top:12px;
+  right:12px;
+  display:flex;
+  gap:8px;
+  z-index:1000;
+}
+#modes button{
+  padding:6px 12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.4);
+  background:rgba(0,0,0,.5);
+  color:#fff;
+}
+
+/* ===== Shorts 牆 ===== */
+.shorts{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:14px;
+  padding:16px;
+}
+
+.short{
+  position:relative;
+  border-radius:14px;
+  overflow:hidden;
+  cursor:pointer;
+}
+
+.short img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.playIcon{
+  position:absolute;
+  inset:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:34px;
+  background:rgba(0,0,0,.4);
+}
+
+/* ===== 播放器 ===== */
+#playerBox{
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:none;
+  z-index:9999;
+}
+
+#player{
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+/* ===== 能量環 ===== */
+.energy{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 1.2s ease;
+}
+
+.energy::before{
+  content:"";
+  position:absolute;
+  inset:12px;
+  border-radius:50%;
+  border:6px solid transparent;
+  animation:spin 6s linear infinite;
+}
+
+/* 播放中顯示 */
+#playerBox.playing .energy{
+  opacity:1;
+}
+
+/* ===== 三種模式顏色 ===== */
+body.neon .energy::before{
+  border-image:linear-gradient(45deg,#ff00ff,#ff66ff,#ff00ff) 1;
+  box-shadow:0 0 60px #ff00ff;
+}
+body.heal .energy::before{
+  border-image:linear-gradient(45deg,#7fffd4,#bfffe8,#7fffd4) 1;
+  box-shadow:0 0 40px #7fffd4;
+}
+body.sci .energy::before{
+  border-image:linear-gradient(45deg,#00ffff,#66ffff,#00ffff) 1;
+  box-shadow:0 0 50px #00ffff;
+}
+
+@keyframes spin{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
+}
+
+/* 關閉鍵 */
+.close{
+  position:absolute;
+  top:14px;
+  right:14px;
+  font-size:22px;
+  background:rgba(0,0,0,.5);
+  border-radius:50%;
+  padding:6px 10px;
+  cursor:pointer;
+  z-index:10;
+}
+</style>
+</head>
+
+<body class="sci">
+
+<!-- 模式 -->
+<div id="modes">
+  <button onclick="setMode('neon')">霓虹</button>
+  <button onclick="setMode('heal')">療癒</button>
+  <button onclick="setMode('sci')">科幻</button>
+</div>
+
+<!-- Shorts -->
+<div class="shorts">
+  <div class="short" onclick="playShort('jSaRUPIsDIA')">
+    <img src="https://img.youtube.com/vi/jSaRUPIsDIA/hqdefault.jpg">
+    <div class="playIcon">▶</div>
+  </div>
+  <div class="short" onclick="playShort('bKe8eohEfTQ')">
+    <img src="https://img.youtube.com/vi/bKe8eohEfTQ/hqdefault.jpg">
+    <div class="playIcon">▶</div>
+  </div>
+</div>
+
+<!-- 播放器 -->
+<div id="playerBox">
+  <div class="energy"></div>
+  <div class="close" onclick="closePlayer()">✕</div>
+  <iframe
+    id="player"
+    allow="encrypted-media"
+    playsinline
+    webkit-playsinline>
+  </iframe>
+</div>
+
+<script>
+const box = document.getElementById("playerBox");
+const player = document.getElementById("player");
+
+function playShort(id){
+  player.src = `https://www.youtube.com/embed/${id}?playsinline=1`;
+  box.style.display = "block";
+  setTimeout(()=>box.classList.add("playing"),50);
+}
+
+function closePlayer(){
+  box.classList.remove("playing");
+  setTimeout(()=>{
+    player.src = "";
+    box.style.display = "none";
+  },1000);
+}
+
+function setMode(mode){
+  document.body.className = mode;
+}
+</script>
+
+</body>
+</html>
