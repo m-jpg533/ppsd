@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>舞台影片展示</title>
+
+<style>
+body{
+  margin:0;
+  height:100vh;
+  background:#000;
+  overflow:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:"Microsoft JhengHei",sans-serif;
+}
+
+/* ===== 舞台容器 ===== */
+.stage{
+  position:relative;
+  width:300px;
+  height:300px;
+}
+
+/* ===== 影片層（一定要最高） ===== */
+.video-layer{
+  position:absolute;
+  inset:0;
+  z-index:999;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.video-layer iframe{
+  width:260px;
+  height:260px;
+  border-radius:50%;
+  border:none;
+  background:black;
+}
+
+/* ===== 探照燈 ===== */
+.light{
+  position:absolute;
+  width:420px;
+  height:420px;
+  border-radius:50%;
+  filter:blur(60px);
+  opacity:.6;
+  pointer-events:none; /* ⭐⭐⭐ 關鍵：不擋觸控 */
+  animation:flicker 2.5s infinite alternate;
+}
+
+.light.red{background:radial-gradient(circle,rgba(255,0,0,.8),transparent)}
+.light.blue{background:radial-gradient(circle,rgba(0,150,255,.8),transparent)}
+.light.green{background:radial-gradient(circle,rgba(0,255,150,.8),transparent)}
+.light.purple{background:radial-gradient(circle,rgba(200,0,255,.8),transparent)}
+
+.light.tl{top:-200px;left:-200px}
+.light.tr{top:-200px;right:-200px}
+.light.bl{bottom:-200px;left:-200px}
+.light.br{bottom:-200px;right:-200px}
+
+@keyframes flicker{
+  from{opacity:.4}
+  to{opacity:.75}
+}
+</style>
+</head>
+
+<body>
+
+<div class="stage">
+
+  <!-- 探照燈 -->
+  <div class="light red tl"></div>
+  <div class="light blue tr"></div>
+  <div class="light green bl"></div>
+  <div class="light purple br"></div>
+
+  <!-- 影片 -->
+  <div class="video-layer">
+    <iframe
+      src="https://www.youtube.com/embed/zOjRlVpAOQ?playsinline=1"
+      allow="encrypted-media"
+      allowfullscreen>
+    </iframe>
+  </div>
+
+</div>
+
+</body>
+</html>
