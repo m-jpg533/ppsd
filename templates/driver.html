@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>手機定位上傳</title>
+</head>
+
+<body>
+<h2>手機定位中...</h2>
+<p id="status">準備定位</p>
+
+<script>
+function sendLocation(position) {
+    fetch("/update", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+        })
+    });
+
+    document.getElementById("status").innerText =
+        "定位成功：" + position.coords.latitude + "," + position.coords.longitude;
+}
+
+function error() {
+    document.getElementById("status").innerText =
+        "定位失敗 → 請開啟 GPS 與定位權限";
+}
+
+navigator.geolocation.watchPosition(sendLocation, error, {
+    enableHighAccuracy: true
+});
+</script>
+</body>
+</html>
