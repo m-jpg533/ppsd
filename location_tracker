@@ -1,5 +1,6 @@
 |-app.py
 |-templates
-     |-index.html 
+     |-driver.html
+     |-map.html
 |-requirements.txt
 |-render.yaml
