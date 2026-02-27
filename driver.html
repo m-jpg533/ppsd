@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>定位中...</title>
+</head>
+<body>
+
+<h2>📍 手機定位上傳中</h2>
+<p id="status">等待定位...</p>
+
+<script>
+function sendLocation(position) {
+    const data = {
+        lat: position.coords.latitude,
+        lon: position.coords.longitude
+    };
+
+    fetch("/update", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+        document.getElementById("status").innerText =
+            "距離家：" + res.distance + " 公尺";
+
+        if (res.arrived) {
+            alert("🏠 已到家！");
+        }
+    });
+}
+
+function error() {
+    document.getElementById("status").innerText = "定位失敗";
+}
+
+navigator.geolocation.watchPosition(sendLocation, error, {
+    enableHighAccuracy: true,
+    maximumAge: 0,
+    timeout: 5000
+});
+</script>
+
+</body>
+</html>
