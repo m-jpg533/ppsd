@@ -4,27 +4,16 @@
 <head>
 <meta charset="utf-8">
 <title>即時位置</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
-html, body {
-  margin: 0;
-  height: 100%;
-}
-#map {
-  height: 100vh;
-  width: 100%;
-}
+html, body { margin:0; height:100%; }
+#map { height:100vh; width:100%; }
+#info { position:absolute; top:5px; left:5px; background:white; padding:5px; z-index:5; }
 </style>
-
-<!-- 建議加 key（未來避免地圖載入失敗） -->
 <script src="https://maps.googleapis.com/maps/api/js"></script>
-
 </head>
-
 <body>
-
+<div id="info">最後更新時間：</div>
 <div id="map"></div>
 
 <script>
@@ -41,7 +30,7 @@ function init() {
         map: map
     });
 
-    updateLocation();          // 先更新一次
+    updateLocation();
     setInterval(updateLocation, 3000);
 }
 
@@ -53,13 +42,12 @@ function updateLocation() {
             const pos = {lat: data.lat, lng: data.lon};
             marker.setPosition(pos);
             map.panTo(pos);
+            document.getElementById("info").innerText = "最後更新時間：" + (data.time || "未更新");
         }
-    })
-    .catch(err => console.log("定位讀取失敗", err));
+    }).catch(err => console.log(err));
 }
 
 init();
 </script>
-
 </body>
 </html>
