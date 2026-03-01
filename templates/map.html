@@ -1,12 +1,12 @@
+
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>即時位置</title>
-<script
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyClqtKjECMTCmQX-MDKJnZ9f9zQELKhTME&callback=initMap"
-    
 
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=你的API_KEY&callback=initMap"
   async
   defer>
 </script>
@@ -14,44 +14,41 @@
 
 <body>
 <h2>即時位置追蹤</h2>
-
 <div id="map" style="width:100%; height:100vh;"></div>
+
 <script>
 let map;
 let marker;
 
 function initMap() {
-  const center = { lat: 25.0330, lng: 121.5654 }; // 台北101
+  const center = { lat: 25.0330, lng: 121.5654 };
 
-  new google.maps.Map(document.getElementById("map"), {
+  map = new google.maps.Map(document.getElementById("map"), {
     zoom: 14,
     center: center,
   });
-}
 
+  marker = new google.maps.Marker({
+    position: center,
+    map: map
+  });
 
-    marker = new google.maps.Marker({
-        position: {lat: 25.1166, lng: 121.5166},
-        map: map
-    });
-
-    setInterval(updateLocation, 3000);
+  setInterval(updateLocation, 3000);
 }
 
 function updateLocation() {
-    fetch("/latest")
-    .then(res => res.json())
+  fetch("/latest")
+    .then(res => {
+      if (!res.ok) throw new Error("404 /latest 不存在");
+      return res.json();
+    })
     .then(data => {
-        if(data.lat){
-            let pos = {lat: data.lat, lng: data.lon};
-            marker.setPosition(pos);
-            map.setCenter(pos);
-        }
-    });
+      const pos = { lat: data.lat, lng: data.lon };
+      marker.setPosition(pos);
+      map.setCenter(pos);
+    })
+    .catch(err => console.error(err));
 }
-
-initMap();
 </script>
 </body>
 </html>
-
