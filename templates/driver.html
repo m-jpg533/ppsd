@@ -6,33 +6,65 @@
 <title>GPS 上傳</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
+
 <body>
-<h2>上傳你的 GPS 位置</h2>
-<button onclick="sendLocation()">傳送位置</button>
-<p id="status"></p>
+<h2>GPS 即時追蹤（Driver）</h2>
+
+<button onclick="startTracking()">開始追蹤</button>
+<button onclick="stopTracking()">停止追蹤</button>
+
+<p id="status">尚未開始</p>
 
 <script>
-function sendLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            fetch("/update_location", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    lat: pos.coords.latitude,
-                    lon: pos.coords.longitude
-                })
-            }).then(r => r.json())
-            .then(data => {
-                document.getElementById("status").innerText = "傳送結果：" + JSON.stringify(data);
-            });
-        }, function(err){
-            document.getElementById("status").innerText = "無法取得 GPS: " + err.message;
-        });
-    } else {
-        document.getElementById("status").innerText = "裝置不支援定位";
+let watchId = null;
+
+function startTracking() {
+  if (!navigator.geolocation) {
+    alert("瀏覽器不支援定位");
+    return;
+  }
+
+  if (watchId !== null) {
+    document.getElementById("status").innerText = "已在追蹤中";
+    return;
+  }
+
+  document.getElementById("status").innerText = "開始追蹤中…";
+
+  watchId = navigator.geolocation.watchPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+
+      fetch("/update_location", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lon })
+      });
+
+      document.getElementById("status").innerText =
+        "已上傳：" + lat.toFixed(6) + ", " + lon.toFixed(6);
+    },
+    err => {
+      document.getElementById("status").innerText =
+        "定位失敗：" + err.message;
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 1000,
+      timeout: 10000
     }
+  );
+}
+
+function stopTracking() {
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+    document.getElementById("status").innerText = "已停止追蹤";
+  }
 }
 </script>
+
 </body>
 </html>
