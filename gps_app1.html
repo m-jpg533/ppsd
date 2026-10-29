@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GPS 運動與軌跡追蹤器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 圖標 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet 地圖 CSS 與 JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #map {
+            height: 380px;
+            <!-- Leaflet 互動地圖視窗 -->
+            <div class="relative">
+                <div id="map"></div>
+                
+                <!-- 地圖控制按鈕群 -->
+                <div class="absolute bottom-3 right-3 z-[400] flex flex-col space-y-2">
+                    <button id="followToggleBtn" onclick="toggleAutoFollow()" class="w-10 h-10 bg-slate-900/90 text-emerald-400 border border-slate-700 rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition" title="開關鏡頭自動跟隨">
+                        <i class="fa-solid fa-compass text-base"></i>
+                    </button>
+                    <button onclick="centerMapToUser()" class="w-10 h-10 bg-slate-900/90 text-sky-400 border border-slate-700 rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition" title="重設地圖中心">
+                        <i class="fa-solid fa-crosshairs text-base"></i>
+                    </button>
+                </div>
+            </div>
+            <div>
+                <h1 class="text-base font-bold leading-none text-white">GPS 軌跡追蹤器</h1>
+                <span class="text-xs text-slate-400" id="gpsStatusText"><i class="fa-solid fa-circle text-[8px] text-amber-400 mr-1"></i>尚未連線 GPS</span>
+            </div>
+        </div>
+        <button onclick="shareLocationToLine()" class="px-3 py-1.5 bg-[#06C755] hover:bg-[#05b34c] text-white font-semibold text-xs rounded-xl shadow flex items-center space-x-1">
+            <i class="fa-brands fa-line text-sm"></i>
+            <span>分享位置</span>
+        </button>
+    </header>
+
+    <!-- 主介面 -->
+    <main class="my-auto py-3 space-y-3">
+
+        <!-- 數據核心儀表板 -->
+        <div class="grid grid-cols-3 gap-2">
+            <div class="glass-card rounded-2xl p-3 text-center">
+                <span class="text-[11px] text-slate-400 flex items-center justify-center space-x-1 mb-0.5">
+                    <i class="fa-solid fa-route text-sky-400"></i><span>距離</span>
+                </span>
+                <div class="text-xl font-extrabold text-white"><span id="distanceText">0.00</span> <span class="text-xs font-normal text-slate-400">km</span></div>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-3 text-center">
+                <span class="text-[11px] text-slate-400 flex items-center justify-center space-x-1 mb-0.5">
+                    <i class="fa-solid fa-gauge-high text-emerald-400"></i><span>時速</span>
+                </span>
+                <div class="text-xl font-extrabold text-white"><span id="speedText">0.0</span> <span class="text-xs font-normal text-slate-400">km/h</span></div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-3 text-center">
+                <span class="text-[11px] text-slate-400 flex items-center justify-center space-x-1 mb-0.5">
+                    <i class="fa-solid fa-stopwatch text-amber-400"></i><span>時間</span>
+                </span>
+                <div class="text-xl font-extrabold text-white font-mono" id="durationText">00:00</div>
+            </div>
+        </div>
+
+        <!-- Leaflet 互動地圖視窗 -->
+        <div class="relative">
+            <div id="map"></div>
+            
+            <!-- 重設地圖中心點按鈕 -->
+            <button onclick="centerMapToUser()" class="absolute bottom-3 right-3 z-[400] w-10 h-10 bg-slate-900/90 text-sky-400 border border-slate-700 rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition">
+                <i class="fa-solid fa-crosshairs text-base"></i>
+            </button>
+        </div>
+
+        <!-- 實時地理資訊細節卡片 -->
+        <div class="glass-card rounded-2xl p-3 text-xs space-y-1.5 text-slate-300">
+            <div class="flex justify-between border-b border-slate-800 pb-1">
+                <span class="text-slate-400"><i class="fa-solid fa-map-pin mr-1 text-rose-400"></i>經緯度座標:</span>
+                <span class="font-mono text-white" id="coordsText">等待定位中...</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-400"><i class="fa-solid fa-mountain mr-1 text-indigo-400"></i>海拔高度:</span>
+                <span class="font-mono text-white" id="altitudeText">-- m</span>
+            </div>
+        </div>
+
+        <!-- 追蹤控制核心按鈕 -->
+        <div class="space-y-2 pt-1">
+            <button id="toggleTrackBtn" onclick="toggleTracking()" class="w-full py-3.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-lg shadow-sky-600/30 flex items-center justify-center space-x-2 transition active:scale-[0.98]">
+                <i class="fa-solid fa-play"></i>
+                <span>開始 GPS 軌跡追蹤</span>
+            </button>
+
+            <div class="flex space-x-2">
+                <button onclick="clearCurrentTrack()" class="flex-1 py-2.5 glass-card hover:bg-rose-500/20 text-xs font-semibold text-rose-400 border-rose-500/20 rounded-xl transition flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>清除當前軌跡</span>
+                </button>
+                <button onclick="exportGpx()" class="flex-1 py-2.5 glass-card hover:bg-white/10 text-xs font-semibold text-sky-300 rounded-xl transition flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-file-arrow-down"></i>
+                    <span>匯出 GPX 檔案</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 底部版權與提示 -->
+    <footer class="text-center text-[11px] text-slate-500 py-2 border-t border-slate-800/80">
+        建議在戶外無遮蔽處使用以獲取高精度 GPS 定位
+    </footer>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-sky-600 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-[1000] flex items-center space-x-2">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMsg">訊息</span>
+    </div>
+
+    <script>
+        // 核心狀態變數
+        let isTracking = false;
+        let watchId = null;
+        let timerInterval = null;
+        let startTime = 0;
+        let elapsedTime = 0;
+
+        let totalDistance = 0; // 公尺
+        let pathCoordinates = []; // [[lat, lng], ...]
+        let lastPosition = null;
+        let autoFollowUser = true; // 是否開啟鏡頭跟隨
+
+        // Leaflet 地圖變數
+        let map = null;
+        let polyline = null;
+        let userMarker = null;
+        let startMarker = null;
+
+        // 初始化地圖與狀態
+        window.onload = function() {
+            initMap();
+        };
+
+        // 初始化 Leaflet 地圖
+        function initMap() {
+            // 預設台北 101 位置
+            map = L.map('map', { zoomControl: false }).setView([25.03397, 121.56447], 16);
+
+            // 載入 OpenStreetMap 圖資
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            // 初始化走路軌跡連線 (亮藍色導航高亮)
+            polyline = L.polyline([], {
+                color: '#38bdf8',
+                weight: 6,
+                opacity: 0.9,
+                lineJoin: 'round',
+                lineCap: 'round'
+            }).addTo(map);
+
+            // 使用者手動拖曳地圖時，暫時取消自動跟隨
+            map.on('dragstart', () => {
+                if (autoFollowUser) {
+                    autoFollowUser = false;
+                    updateFollowBtnUI();
+                }
+            });
+
+            // 取得首次定位
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    map.setView([lat, lng], 17);
+                    updateUserMarker(lat, lng);
+                }, () => {});
+            }
+        }
+
+        // 開始 / 暫停 軌跡追蹤
+        function toggleTracking() {
+            const btn = document.getElementById('toggleTrackBtn');
+
+            if (isTracking) {
+                // 暫停追蹤
+                stopTracking();
+                btn.className = "w-full py-3.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center space-x-2";
+                btn.innerHTML = '<i class="fa-solid fa-play"></i><span>繼續連線紀錄走路路線</span>';
+                showToast('已暫停路線繪製');
+            } else {
+                // 開始追蹤
+                if (!navigator.geolocation) {
+                    showToast('您的手機不支援 GPS 定位');
+                    return;
+                }
+
+                isTracking = true;
+                autoFollowUser = true;
+                updateFollowBtnUI();
+
+                startTime = Date.now() - elapsedTime;
+                timerInterval = setInterval(updateTimer, 1000);
+
+                // 開啟高精度 GPS 監聽
+                watchId = navigator.geolocation.watchPosition(handleGpsUpdate, handleGpsError, {
+                    enableHighAccuracy: true,
+                    maximumAge: 1000,
+                    timeout: 10000
+                });
+
+                btn.className = "w-full py-3.5 px-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center space-x-2";
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i><span>連線紀錄路線中 (點擊暫停)</span>';
+                
+                document.getElementById('gpsStatusText').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1 animate-ping"></i>GPS 訊號良好';
+                showToast('開始追蹤！請拿著手機開始走動');
+            }
+        }
+
+        // 處理 GPS 定位數據更新 (走路連線關鍵)
+        function handleGpsUpdate(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const speedMs = position.coords.speed || 0; // m/s
+            const altitude = position.coords.altitude;
+
+            // 更新資訊卡片
+            document.getElementById('coordsText').innerText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            document.getElementById('altitudeText').innerText = altitude ? `${altitude.toFixed(1)} m` : '-- m';
+            
+            const speedKmh = (speedMs * 3.6).toFixed(1);
+            document.getElementById('speedText').innerText = speedKmh;
+
+            const newPoint = [lat, lng];
+
+            // 設置起點標記 (第一個點)
+            if (pathCoordinates.length === 0) {
+                const greenIcon = L.divIcon({
+                    className: 'custom-start-icon',
+                    html: "<div class='w-6 h-6 bg-emerald-500 text-white rounded-full border-2 border-white shadow-lg flex items-center justify-center text-[10px] font-bold'>起</div>",
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+                startMarker = L.marker(newPoint, { icon: greenIcon }).addTo(map);
+            }
+
+            // 計算累積走路距離與連線
+            if (lastPosition) {
+                const distMeters = calculateDistance(
+                    lastPosition.coords.latitude, lastPosition.coords.longitude,
+                    lat, lng
+                );
+
+                // 過濾 2 米內的靜止漂移雜訊
+                if (distMeters > 2) {
+                    totalDistance += distMeters;
+                    pathCoordinates.push(newPoint);
+                    polyline.setLatLngs(pathCoordinates); // 更新連線
+                    document.getElementById('distanceText').innerText = (totalDistance / 1000).toFixed(2);
+                }
+            } else {
+                pathCoordinates.push(newPoint);
+                polyline.setLatLngs(pathCoordinates);
+            }
+
+            lastPosition = position;
+            updateUserMarker(lat, lng);
+
+            // 鏡頭自動跟隨使用者移動
+            if (autoFollowUser) {
+                map.panTo(newPoint, { animate: true, duration: 0.5 });
+            }
+        }
+
+        // 切換鏡頭自動跟隨
+        function toggleAutoFollow() {
+            autoFollowUser = !autoFollowUser;
+            updateFollowBtnUI();
+            if (autoFollowUser && lastPosition) {
+                map.panTo([lastPosition.coords.latitude, lastPosition.coords.longitude]);
+                showToast('已開啟地圖鏡頭跟隨');
+            } else {
+                showToast('已切換為自由滑動地圖');
+            }
+        }
+
+        function updateFollowBtnUI() {
+            const btn = document.getElementById('followToggleBtn');
+            if (autoFollowUser) {
+                btn.className = "w-10 h-10 bg-slate-900/90 text-emerald-400 border border-emerald-500/50 rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition";
+            } else {
+                btn.className = "w-10 h-10 bg-slate-900/90 text-slate-500 border border-slate-700 rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition";
+            }
+        }
+
+        // 開始 / 暫停 軌跡追蹤
+        function toggleTracking() {
+            const btn = document.getElementById('toggleTrackBtn');
+
+            if (isTracking) {
+                // 暫停追蹤
+                stopTracking();
+                btn.className = "w-full py-3.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center space-x-2";
+                btn.innerHTML = '<i class="fa-solid fa-play"></i><span>繼續 GPS 軌跡追蹤</span>';
+                showToast('已暫停 GPS 追蹤');
+            } else {
+                // 開始追蹤
+                if (!navigator.geolocation) {
+                    showToast('您的手機不支援 GPS 定位');
+                    return;
+                }
+
+                isTracking = true;
+                startTime = Date.now() - elapsedTime;
+                
+                // 開啟秒錶
+                timerInterval = setInterval(updateTimer, 1000);
+
+                // 開啟高精度連續 GPS 監聽
+                watchId = navigator.geolocation.watchPosition(handleGpsUpdate, handleGpsError, {
+                    enableHighAccuracy: true,
+                    maximumAge: 1000,
+                    timeout: 10000
+                });
+
+                btn.className = "w-full py-3.5 px-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center space-x-2";
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i><span>暫停 軌跡記錄中...</span>';
+                
+                document.getElementById('gpsStatusText').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1 animate-ping"></i>GPS 接收中';
+                showToast('GPS 定位追蹤已啟動！');
+            }
+        }
+
+        function stopTracking() {
+            isTracking = false;
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            if (timerInterval) clearInterval(timerInterval);
+            document.getElementById('gpsStatusText').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-amber-400 mr-1"></i>已暫停追蹤';
+        }
+
+        // 處理 GPS 定位數據更新
+        function handleGpsUpdate(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const speedMs = position.coords.speed || 0; // m/s
+            const altitude = position.coords.altitude;
+
+            // 更新介面基本數據
+            document.getElementById('coordsText').innerText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            document.getElementById('altitudeText').innerText = altitude ? `${altitude.toFixed(1)} m` : '-- m';
+            
+            const speedKmh = (speedMs * 3.6).toFixed(1);
+            document.getElementById('speedText').innerText = speedKmh;
+
+            const newPoint = [lat, lng];
+
+            // 如果有前一個點，計算增量距離
+            if (lastPosition) {
+                const distMeters = calculateDistance(
+                    lastPosition.coords.latitude, lastPosition.coords.longitude,
+                    lat, lng
+                );
+
+                // 排除微小定位漂移 (大於 2 公尺才計算)
+                if (distMeters > 2) {
+                    totalDistance += distMeters;
+                    pathCoordinates.push(newPoint);
+                    polyline.setLatLngs(pathCoordinates);
+                    document.getElementById('distanceText').innerText = (totalDistance / 1000).toFixed(2);
+                }
+            } else {
+                pathCoordinates.push(newPoint);
+                polyline.setLatLngs(pathCoordinates);
+            }
+
+            lastPosition = position;
+            updateUserMarker(lat, lng);
+            map.panTo(newPoint);
+        }
+
+        function handleGpsError(err) {
+            showToast('GPS 訊號弱或定位失敗: ' + err.message);
+        }
+
+        // 更新使用者座標標籤圖示
+        function updateUserMarker(lat, lng) {
+            if (userMarker) {
+                userMarker.setLatLng([lat, lng]);
+            } else {
+                const redIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: "<div class='w-4 h-4 bg-rose-500 rounded-full border-2 border-white shadow-lg animate-pulse'></div>",
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                });
+                userMarker = L.marker([lat, lng], { icon: redIcon }).addTo(map);
+            }
+        }
+
+        // 重置地圖中心
+        function centerMapToUser() {
+            if (lastPosition) {
+                map.setView([lastPosition.coords.latitude, lastPosition.coords.longitude], 17);
+            } else {
+                showToast('尚未取得當前 GPS 座標');
+            }
+        }
+
+        // 計算兩點間距離 (Haversine Formula)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // 秒錶時間更新
+        function updateTimer() {
+            elapsedTime = Date.now() - startTime;
+            const totalSec = Math.floor(elapsedTime / 1000);
+            const mins = Math.floor(totalSec / 60).toString().padStart(2, '0');
+            const secs = (totalSec % 60).toString().padStart(2, '0');
+            document.getElementById('durationText').innerText = `${mins}:${secs}`;
+        }
+
+        // 清除當前軌跡
+        function clearCurrentTrack() {
+            stopTracking();
+            totalDistance = 0;
+            pathCoordinates = [];
+            lastPosition = null;
+            elapsedTime = 0;
+
+            if (polyline) polyline.setLatLngs([]);
+            document.getElementById('distanceText').innerText = '0.00';
+            document.getElementById('speedText').innerText = '0.0';
+            document.getElementById('durationText').innerText = '00:00';
+            
+            const btn = document.getElementById('toggleTrackBtn');
+            btn.className = "w-full py-3.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center space-x-2";
+            btn.innerHTML = '<i class="fa-solid fa-play"></i><span>開始 GPS 軌跡追蹤</span>';
+            
+            showToast('軌跡與數據已清空');
+        }
+
+        // 匯出 GPX 軌跡檔
+        function exportGpx() {
+            if (pathCoordinates.length === 0) {
+                showToast('目前尚無軌跡資料可供匯出');
+                return;
+            }
+
+            let gpxContent = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="GPS-Tracker-App">\n  <trk>\n    <name>GPS 運動軌跡</name>\n    <trkseg>\n`;
+            pathCoordinates.forEach(pt => {
+                gpxContent += `      <trkpt lat="${pt[0]}" lon="${pt[1]}"></trkpt>\n`;
+            });
+            gpxContent += `    </trkseg>\n  </trk>\n</gpx>`;
+
+            const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `track_${new Date().toISOString().slice(0,10)}.gpx`;
+            a.click();
+            showToast('已開始下載 GPX 軌跡檔');
+        }
+
+        // 分享即時位置到 LINE
+        function shareLocationToLine() {
+            if (!lastPosition) {
+                showToast('尚未定位到經緯度');
+                return;
+            }
+            const lat = lastPosition.coords.latitude;
+            const lng = lastPosition.coords.longitude;
+            const googleMapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+            
+            const shareText = `📍 我的即時 GPS 位置分享：\n經緯度：${lat.toFixed(5)}, ${lng.toFixed(5)}\n\n查看 Google 地圖👇\n${googleMapUrl}`;
+            const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`;
+            
+            window.location.href = lineShareUrl;
+        }
+
+        // Toast 提示框
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
