@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>極簡動感計步器 - 跨平台步數追蹤</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 圖標 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code 生成庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-slate-100 flex flex-col justify-between p-4 sm:p-6 max-w-md mx-auto">
+
+    <!-- 頂部標題列 -->
+    <header class="flex justify-between items-center py-3 border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+            <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400">
+                <i class="fa-solid fa-person-walking text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-bold leading-none tracking-wide text-white">LINE 步數連線</h1>
+                <span class="text-xs text-slate-400">極簡動感計步器</span>
+            </div>
+        </div>
+        <button onclick="toggleSettingsModal()" class="w-9 h-9 rounded-xl bg-slate-800/80 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition">
+            <i class="fa-solid fa-sliders"></i>
+        </button>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="my-auto py-6 flex flex-col items-center justify-center">
+
+        <!-- 步數圓形進度環 -->
+        <div class="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center my-4">
+            <!-- 外圍光暈發光層 -->
+            <div id="glowRing" class="absolute inset-0 rounded-full bg-indigo-500/10 blur-xl transition-all duration-500"></div>
+
+            <!-- SVG 進度條 -->
+            <svg class="w-full h-full transform -rotate-90">
+                <circle cx="50%" cy="50%" r="42%" class="stroke-slate-800" stroke-width="12" fill="transparent" />
+                <circle id="progressCircle" cx="50%" cy="50%" r="42%" 
+                        class="stroke-indigo-500 transition-all duration-300 stroke-dashoffset" 
+                        stroke-width="12" 
+                        stroke-linecap="round" 
+                        fill="transparent" 
+                        stroke-dasharray="700" 
+                        stroke-dashoffset="700" />
+            </svg>
+
+            <!-- 核心步數數據中心 -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span id="walkingStatus" class="text-xs font-semibold tracking-wider text-emerald-400 uppercase px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-1">
+                    <i class="fa-solid fa-circle-dot text-[10px] animate-pulse mr-1"></i>感測中
+                </span>
+                
+                <div class="flex items-baseline justify-center">
+                    <span id="stepCount" class="text-5xl sm:text-6xl font-extrabold tracking-tight text-white font-mono">0</span>
+                    <span class="text-sm font-semibold text-slate-400 ml-1">步</span>
+                </div>
+
+                <div class="mt-2 text-xs text-slate-400 flex items-center space-x-1">
+                    <span>目標:</span>
+                    <span id="targetStepsDisplay" class="font-bold text-slate-200">10,000</span>
+                    <span id="progressPercent" class="text-indigo-400 font-bold ml-1">(0%)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 數據統計小面板 (距離、熱量、時間) -->
+        <div class="w-full grid grid-cols-3 gap-3 mt-4">
+            <div class="glass-card rounded-2xl p-3 text-center">
+                <div class="text-xs text-slate-400 mb-1 flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-fire text-amber-400"></i>
+                    <span>熱量</span>
+                </div>
+                <div class="text-lg font-bold text-slate-100"><span id="caloriesText">0</span> <span class="text-xs font-normal text-slate-400">kcal</span></div>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-3 text-center">
+                <div class="text-xs text-slate-400 mb-1 flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-route text-sky-400"></i>
+                    <span>里程</span>
+                </div>
+                <div class="text-lg font-bold text-slate-100"><span id="distanceText">0.00</span> <span class="text-xs font-normal text-slate-400">km</span></div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-3 text-center">
+                <div class="text-xs text-slate-400 mb-1 flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-clock text-emerald-400"></i>
+                    <span>時間</span>
+                </div>
+                <div class="text-lg font-bold text-slate-100"><span id="activeTimeText">0</span> <span class="text-xs font-normal text-slate-400">分鐘</span></div>
+            </div>
+        </div>
+
+        <!-- 模式切換分頁標籤 -->
+        <div class="w-full mt-6 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 flex text-xs font-bold text-slate-400">
+            <button id="tabMotion" onclick="switchMode('motion')" class="flex-1 py-2 rounded-xl transition bg-indigo-600 text-white shadow">
+                <i class="fa-solid fa-mobile-screen mr-1"></i>搖晃感測
+            </button>
+            <button id="tabGps" onclick="switchMode('gps')" class="flex-1 py-2 rounded-xl transition hover:text-white">
+                <i class="fa-solid fa-location-arrow mr-1"></i>GPS 戶外
+            </button>
+            <button id="tabPace" onclick="switchMode('pace')" class="flex-1 py-2 rounded-xl transition hover:text-white">
+                <i class="fa-solid fa-stopwatch mr-1"></i>節奏計時
+            </button>
+        </div>
+
+        <!-- 開啟感測器與控制按鈕區域 -->
+        <div class="w-full space-y-3 mt-3">
+            <!-- 模式 1: 搖晃感測按鈕 -->
+            <div id="modeMotionPanel">
+                <button id="permissionBtn" onclick="requestMotionPermission()" class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition active:scale-[0.98]">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    <span>啟用手機動作感測器</span>
+                </button>
+            </div>
+
+            <!-- 模式 2: GPS 定位按鈕 -->
+            <div id="modeGpsPanel" class="hidden">
+                <button id="gpsBtn" onclick="toggleGpsTracking()" class="w-full py-3.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-lg shadow-sky-600/30 flex items-center justify-center space-x-2 transition active:scale-[0.98]">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                    <span>開啟 GPS 定位戶外計步</span>
+                </button>
+                <div class="text-[11px] text-slate-400 text-center mt-1">適合戶外散步與跑步，依移動距離換算步數</div>
+            </div>
+
+            <!-- 模式 3: 節奏定時按鈕 -->
+            <div id="modePacePanel" class="hidden">
+                <button id="paceBtn" onclick="togglePaceTimer()" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-2 transition active:scale-[0.98]">
+                    <i class="fa-solid fa-play"></i>
+                    <span>開始健走節奏計步 (120 步/分)</span>
+                </button>
+                <div class="text-[11px] text-slate-400 text-center mt-1">100% 跨平台相容，依照健走時間自動計算</div>
+            </div>
+
+            <div class="flex space-x-3">
+                <button onclick="addManualStep(100)" class="flex-1 py-2.5 px-3 glass-card hover:bg-white/10 text-xs font-semibold text-slate-300 rounded-xl transition flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-plus text-indigo-400"></i>
+                    <span>模擬+100步</span>
+                </button>
+                <button onclick="resetSteps()" class="py-2.5 px-4 glass-card hover:bg-rose-500/20 text-xs font-semibold text-rose-400 border-rose-500/20 rounded-xl transition flex items-center justify-center">
+                    <i class="fa-solid fa-rotate-left mr-1"></i>重設
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 底部 LINE 分享區 -->
+    <footer class="pt-4 border-t border-slate-800/80">
+        <button onclick="shareToLine()" class="w-full py-3.5 px-4 bg-[#06C755] hover:bg-[#05b34c] text-white font-bold rounded-xl shadow-lg shadow-green-600/20 flex items-center justify-center space-x-2 transition active:scale-[0.98]">
+            <i class="fa-brands fa-line text-xl"></i>
+            <span>分享今日成果到 LINE</span>
+        </button>
+        
+        <div class="flex justify-between items-center mt-3 text-[11px] text-slate-500">
+            <span>連結即時同步，朋友開啟即可直接使用</span>
+            <button onclick="showQRCodeModal()" class="text-slate-400 underline hover:text-indigo-400">開啟 QR Code</button>
+        </div>
+    </footer>
+
+    <!-- 設定 Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-slate-900/90 border-slate-700 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center justify-between">
+                <span><i class="fa-solid fa-sliders text-indigo-400 mr-2"></i>計步參數設定</span>
+                <button onclick="toggleSettingsModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </h3>
+
+            <div class="space-y-4 text-sm">
+                <div>
+                    <label class="block text-slate-300 text-xs font-semibold mb-1">每日目標步數</label>
+                    <input type="number" id="targetStepsInput" value="10000" step="500" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-slate-300 text-xs font-semibold mb-1">體重 (kg) - 計算卡路里</label>
+                    <input type="number" id="weightInput" value="65" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-slate-300 text-xs font-semibold mb-1">步幅 (cm) - 計算步行距離</label>
+                    <input type="number" id="strideInput" value="65" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <button onclick="saveSettings()" class="w-full mt-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition">
+                儲存設定
+            </button>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-slate-900/90 border-slate-700 w-full max-w-xs rounded-2xl p-6 text-center shadow-2xl">
+            <h3 class="text-base font-bold text-white mb-2">掃描 QR Code 立即開啟計步</h3>
+            <p class="text-xs text-slate-400 mb-4">其他人掃描此條碼亦可開始記錄步數</p>
+            
+            <div class="bg-white p-3 rounded-xl inline-block mb-4" id="qrcode"></div>
+
+            <button onclick="hideQRCodeModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl transition">
+                關閉窗口
+            </button>
+        </div>
+    </div>
+
+    <!-- 通知訊息 Toast -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center space-x-2">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMsg">訊息通知</span>
+    </div>
+
+    <script>
+        // 核心狀態變數
+        let stepCount = 0;
+        let targetSteps = 10000;
+        let userWeight = 65; // kg
+        let userStride = 65; // cm
+        let activeMinutes = 0;
+
+        // 感測器與 GPS 狀態
+        let currentMode = 'motion'; // 'motion' | 'gps' | 'pace'
+        let lastAccel = { x: 0, y: 0, z: 0 };
+        let lastStepTime = 0;
+        const stepThreshold = 11.5;
+        const stepMinInterval = 330;
+        
+        // GPS 變數
+        let gpsWatchId = null;
+        let lastPosition = null;
+
+        // 節奏計時變數
+        let paceInterval = null;
+
+        // 初始化頁面
+        window.onload = function() {
+            updateUI();
+            checkMotionPermissionRequirement();
+            
+            setInterval(() => {
+                activeMinutes = Math.floor(stepCount / 65);
+                document.getElementById('activeTimeText').innerText = activeMinutes;
+            }, 5000);
+        };
+
+        // 切換計步模式
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // 頁籤樣式切換
+            const tabs = ['tabMotion', 'tabGps', 'tabPace'];
+            const panels = ['modeMotionPanel', 'modeGpsPanel', 'modePacePanel'];
+            
+            tabs.forEach((tabId, idx) => {
+                const btn = document.getElementById(tabId);
+                const panel = document.getElementById(panels[idx]);
+                if ((mode === 'motion' && idx === 0) || (mode === 'gps' && idx === 1) || (mode === 'pace' && idx === 2)) {
+                    btn.className = "flex-1 py-2 rounded-xl transition bg-indigo-600 text-white shadow";
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.className = "flex-1 py-2 rounded-xl transition hover:text-white";
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+
+        // --- 模式 1: 動作感測器 ---
+        function requestMotionPermission() {
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') startPedometer();
+                        else showToast('動作感測權限被拒絕');
+                    })
+                    .catch(() => startPedometer());
+            } else {
+                startPedometer();
+            }
+        }
+
+        function startPedometer() {
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', handleMotion, false);
+                const btn = document.getElementById('permissionBtn');
+                btn.className = "w-full py-3.5 px-4 bg-emerald-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center space-x-2";
+                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>感測器監聽中...</span>';
+                showToast('動作感測器已啟動！');
+            } else {
+                showToast('您的裝置不支援動作感測器');
+            }
+        }
+
+        function handleMotion(event) {
+            if (currentMode !== 'motion') return;
+            const acc = event.accelerationIncludingGravity;
+            if (!acc || acc.x === null) return;
+
+            const now = Date.now();
+            const deltaX = acc.x - lastAccel.x;
+            const deltaY = acc.y - lastAccel.y;
+            const deltaZ = acc.z - lastAccel.z;
+            const speed = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+
+            if (speed > stepThreshold && (now - lastStepTime > stepMinInterval)) {
+                stepCount++;
+                lastStepTime = now;
+                updateUI();
+            }
+            lastAccel = { x: acc.x, y: acc.y, z: acc.z };
+        }
+
+        // --- 模式 2: GPS 定位計步 ---
+        function toggleGpsTracking() {
+            const btn = document.getElementById('gpsBtn');
+            if (gpsWatchId) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                gpsWatchId = null;
+                btn.className = "w-full py-3.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center space-x-2";
+                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i><span>開啟 GPS 定位戶外計步</span>';
+                showToast('GPS 定位追蹤已關閉');
+            } else {
+                if (!navigator.geolocation) {
+                    showToast('您的手機不支援 GPS 地理定位');
+                    return;
+                }
+                gpsWatchId = navigator.geolocation.watchPosition(handleGpsSuccess, handleGpsError, {
+                    enableHighAccuracy: true,
+                    maximumAge: 1000,
+                    timeout: 5000
+                });
+                btn.className = "w-full py-3.5 px-4 bg-emerald-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center space-x-2";
+                btn.innerHTML = '<i class="fa-solid fa-location-dot animate-ping"></i><span>GPS 戶外追蹤中...</span>';
+                showToast('GPS 定位中，請開始走動');
+            }
+        }
+
+        function handleGpsSuccess(position) {
+            if (currentMode !== 'gps') return;
+            if (lastPosition) {
+                const distanceMeters = calculateDistance(
+                    lastPosition.coords.latitude, lastPosition.coords.longitude,
+                    position.coords.latitude, position.coords.longitude
+                );
+                
+                // 過慮漂移雜訊 (> 1.5 米且 < 100 米)
+                if (distanceMeters > 1.5 && distanceMeters < 100) {
+                    const addedSteps = Math.round((distanceMeters * 100) / userStride);
+                    stepCount += addedSteps;
+                    updateUI();
+                }
+            }
+            lastPosition = position;
+        }
+
+        function handleGpsError(err) {
+            showToast('GPS 定位失敗：' + err.message);
+        }
+
+        // 哈費賽公式 (Haversine Formula) 計算兩點間距離(公尺)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // --- 模式 3: 節奏健走計時 ---
+        function togglePaceTimer() {
+            const btn = document.getElementById('paceBtn');
+            if (paceInterval) {
+                clearInterval(paceInterval);
+                paceInterval = null;
+                btn.className = "w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center space-x-2";
+                btn.innerHTML = '<i class="fa-solid fa-play"></i><span>開始健走節奏計步 (120 步/分)</span>';
+                showToast('節奏計時已暫停');
+            } else {
+                // 每秒增加 2 步 (相當於 120 步/分鐘)
+                paceInterval = setInterval(() => {
+                    stepCount += 2;
+                    updateUI();
+                }, 1000);
+                btn.className = "w-full py-3.5 px-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center space-x-2";
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i><span>健走計時中 (點擊暫停)</span>';
+                showToast('節奏計時已開始！');
+            }
+        }
+
+        // 手動模擬加步數
+        function addManualStep(count) {
+            stepCount += count;
+            updateUI();
+            showToast(`已手動增加 ${count} 步`);
+        }
+
+        // 重置步數
+        function resetSteps() {
+            stepCount = 0;
+            if (paceInterval) togglePaceTimer();
+            if (gpsWatchId) toggleGpsTracking();
+            updateUI();
+            showToast('步數已清零');
+        }
+
+        // 更新介面數值與進度條
+        function updateUI() {
+            document.getElementById('stepCount').innerText = stepCount.toLocaleString();
+
+            const calories = Math.round(stepCount * (userWeight / 65) * 0.04);
+            document.getElementById('caloriesText').innerText = calories;
+
+            const distance = ((stepCount * userStride) / 100000).toFixed(2);
+            document.getElementById('distanceText').innerText = distance;
+
+            const percent = Math.min(Math.round((stepCount / targetSteps) * 100), 100);
+            document.getElementById('progressPercent').innerText = `(${percent}%)`;
+            document.getElementById('targetStepsDisplay').innerText = targetSteps.toLocaleString();
+
+            const circle = document.getElementById('progressCircle');
+            const circumference = 2 * Math.PI * (288 * 0.42);
+            const offset = circumference - (percent / 100) * circumference;
+            circle.style.strokeDasharray = `${circumference}`;
+            circle.style.strokeDashoffset = offset;
+
+            const glow = document.getElementById('glowRing');
+            if (percent >= 100) {
+                glow.className = "absolute inset-0 rounded-full bg-emerald-500/30 blur-2xl pulse-ring transition-all duration-500";
+            } else {
+                glow.className = "absolute inset-0 rounded-full bg-indigo-500/10 blur-xl transition-all duration-500";
+            }
+        }
+
+        // 分享到 LINE
+        function shareToLine() {
+            const currentUrl = window.location.href;
+            const distance = ((stepCount * userStride) / 100000).toFixed(2);
+            const calories = Math.round(stepCount * (userWeight / 65) * 0.04);
+            
+            // 組裝分享文字
+            const shareText = `🚶‍♂️ 我今天已經走了 ${stepCount.toLocaleString()} 步！\n` +
+                              `🛣️ 累積距離：${distance} km\n` +
+                              `🔥 消耗熱量：${calories} kcal\n\n` +
+                              `點擊下方連結，一起開始走路計步吧👇`;
+
+            // LINE 分享 URL Scheme
+            const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(shareText + "\n" + currentUrl)}`;
+
+            // 打開 LINE
+            window.location.href = lineShareUrl;
+        }
+
+        // 彈出/隱藏設定視窗
+        function toggleSettingsModal() {
+            const modal = document.getElementById('settingsModal');
+            modal.classList.toggle('hidden');
+        }
+
+        // 儲存設定
+        function saveSettings() {
+            const t = parseInt(document.getElementById('targetStepsInput').value) || 10000;
+            const w = parseInt(document.getElementById('weightInput').value) || 65;
+            const s = parseInt(document.getElementById('strideInput').value) || 65;
+
+            targetSteps = t;
+            userWeight = w;
+            userStride = s;
+
+            updateUI();
+            toggleSettingsModal();
+            showToast('設定已更新');
+        }
+
+        // QR Code Modal 控制
+        function showQRCodeModal() {
+            const modal = document.getElementById('qrModal');
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = ''; // 清空舊 QR
+            
+            new QRCode(qrContainer, {
+                text: window.location.href,
+                width: 180,
+                height: 180,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        function hideQRCodeModal() {
+            document.getElementById('qrModal').classList.add('hidden');
+        }
+
+        // 簡短提示訊息框
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // 檢查瀏覽器與 iOS 權限需求
+        function checkMotionPermissionRequirement() {
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                document.getElementById('permissionBtn').classList.add('animate-bounce');
+            }
+        }
+    </script>
+</body>
+</html>
